@@ -29,7 +29,10 @@
             formData.append("file",document.getElementById("file").files[0]);
             formData.append("destination","//Users/ibxz/Documents")
             xhr.open('POST','AjaxTestProcessServlet');
-            xhr.onload=function(){};
+            xhr.onload=function(){
+
+                document.getElementById("output").innerText=xhr.responseText;
+            };
             xhr.send(formData);
         }
 
