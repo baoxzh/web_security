@@ -1,0 +1,81 @@
+使用FILE UPLOAD
+
+File Upload有很多不同的使用方式，取决于你的应用程序，最简单的方式是使用一个单独的方法来转换servlet请求,然后处理这些像你的应用发出请求的项。在另一个面，你可能需要决定对哪个项执行完全控制以保存它。比如：你可能会决定把内容保存到数据库中。
+
+这里，我们将描述File Upload的原理，并举例说明一些较为简单－－最常使用的模式，关于File Upload的定制，可以在其他其他位置。
+
+File Upload依赖于Commons IO，请确保你的classpath里有对于版本的jar包(相关页面有提及)。
+
+如何工作
+
+一个file upload请求包含一组根据RFC 1867编码的已排序的项目，“基于HTML表单的文件上传”。File Upload能够转换一个请求然后为你的应用程序提供一组单一上传的项目。每个这样的项目都实现了FileItem接口，不太在乎如何具体实现。
+
+这一页介绍了commons fileuplaod库的传统API，传统的API是一个方便的方法。但是，为了最终性能着想，你可能更喜欢使用Streaming API。
+
+每一个文件项都有一些你的应用程序可能感性趣的属性。比如，所有项都有一个名字和内容类型，并且提供了一个输入流去访问它的数据。另一方面，你可能需要使用不同的方式去处理这些项，依据该项是否一个正则的表单元素（数据是否来自于一个传统的文本框或者类似的表单元素），或者一个上传的文件。文件项接口提供了方法去实现这个检测，以及相应的方式访问它们的数据。
+
+
+解析请求
+
+在你操作上传组件之前，你需要解析请求自身。确保请求实际上是一个文件上传请求很简单，File Upload的提供了一个静态方法使它非常简单。
+
+// Check that we have a file upload request
+boolean isMultipart = ServletFileUpload.isMultipartContent(request);
+
+现在我们可以把请求解析成它的组成项。
+
+
+// 为基于硬盘文件的项目集创建一个工厂
+
+FileItemFactory factory = new DiskFileItemFactory();
+// 创建一个新的文件上传处理器
+ServletFileUpload upload = new ServletFileUpload(factory);
+// 解析请求
+List items = upload.parseRequest(request);
+
+处理上传项目
+
+当完成请求解析后，你会得到一个由你想要处理的文件项组成的集合。大部分情况下，你会想要把使用文件上传的上传的项处理方法区别于和常规表单处理，你需要这样做：
+
+ // 处理上传项目
+Iterator iter = items.iterator();
+while (iter.hasNext()) {
+    FileItem item = (FileItem) iter.next();
+
+    if (item.isFormField()) {
+        processFormField(item);
+    } else {
+        processUploadedFile(item);
+    }
+}
+对于一个正常的表单项，你只会关心它的name，以及对应的字符串值。和你的预期一样，访问上传项目也非常简单。
+
+ // 处理一个正常表单
+if (item.isFormField()) {
+    String name = item.getFieldName();
+    String value = item.getString();
+    ...
+}
+对于一个文件上传项，在你处理它的内容之前，你可能会想要知道几件事情。这里有一个关于你可能感兴趣的一些方法的例子。
+
+ // 处理上传项目
+if (!item.isFormField()) {
+    String fieldName = item.getFieldName();
+    String fileName = item.getName();
+    String contentType = item.getContentType();
+    boolean isInMemory = item.isInMemory();
+    long sizeInBytes = item.getSize();
+    ...
+}
+对于上传的文件，你通常不会想把它放到内存中，除非它很小，或者你没有其它可替代的方法。恰恰相反，你会把文件当成流来处理，并把整个文件存放到最终位置。File Upload提供了简单的方法来实现这两种处理。
+
+ // 处理上传项目
+if (writeToFile) {
+    File uploadedFile = new File(...);
+    item.write(uploadedFile);
+} else {
+    InputStream uploadedStream = item.getInputStream();
+    ...
+    uploadedStream.close();
+}
+注意，在FileUpload的默认实现里，如果数据已经在临时文件中，write方法会试图更改存放到指定目的地的文件名。其实数据的复制只会在由于某种原因重命名失败的时候才会成功，或者当数据在内存中已经存在的时候。

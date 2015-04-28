@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript">
+	function getimg(){
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET','https://www.baidu.com/img/bdlogo.png');
+	xhr.responseType='blob';
+
+	xhr.onload=function(){
+		if(this.status == 200){
+			var img = document.createElement('img');
+			img.src = window.URL.createObjectURL(this.response);
+			img.onload = function(){
+				window.URL.revokeObjectURL(this.src);
+			}
+			document.body.appendChild(img);		
+		}
+	};
+	xhr.send();
+}
+	window.setInterval("getimg()",1000);
+
+	
+	function sendImg (argument) {
+		var xhr = new XMLHttpRequest();
+
+		var formData = new FormData();
+		formData.append("file","//Users/ibxz/Documents/desktop.ini");
+
+		xhr.open('POST','http://www.baidu.com');
+		xhr.onload=function(){};
+		xhr.send(formData);
+	}
+	
+	</script>
+</head>
+<body>
+
+</body>
+</html>
